@@ -1,4 +1,3 @@
-# from discord import message
 from selenium import webdriver
 # from selenium.common import exceptions
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
@@ -27,12 +26,12 @@ dotenv.load_dotenv()
 
 # https://discord.com/api/oauth2/authorize?client_id=831875019071291433&permissions=8&scope=bot
 
-def DOK():
-    return '\033[92m' + f"[{datetime.now().strftime('%Y %b.%d %H:%M:%S')}] "
-def DINFO():
-    return '\033[93m' + f"[{datetime.now().strftime('%Y %b.%d %H:%M:%S')}] "
-def DERROR():
-    return '\033[91m' + f"[{datetime.now().strftime('%Y %b.%d %H:%M:%S')}] "
+def DOK(content):
+    print(f"\033[92m[{datetime.now().strftime('%Y %b.%d %H:%M:%S')}] {content}\033[0m")
+def DINFO(content):
+    print(f"\033[93m[{datetime.now().strftime('%Y %b.%d %H:%M:%S')}] {content}\033[0m")
+def DERROR(content):
+    print(f"\033[91m[{datetime.now().strftime('%Y %b.%d %H:%M:%S')}] {content}\033[0m")
 
 class C:
     OK = '\033[92m'
@@ -77,7 +76,7 @@ async def get_quote(method, message, caption, dl_path):
     driver.set_page_load_timeout(30)
     driver.implicitly_wait(2)
 
-    print(DOK() + f"Webdriver page loaded" + C.END)
+    DOK(f"Webdriver page loaded")
 
     driver.execute_script("window.scrollTo(0, 1500);")
 
@@ -100,7 +99,7 @@ async def get_quote(method, message, caption, dl_path):
     quotes.click()
 
     await asyncio.sleep(0.5)
-    print(DINFO() + f"Method : {method}" + C.END)
+    DINFO(f"Method : {method}")
     if method == "screen":
         path = dl_path + "/screenshot.png"
         driver.find_element_by_xpath('//div[@id="image-offset"]').screenshot(path)
@@ -128,7 +127,7 @@ async def get_quote(method, message, caption, dl_path):
         await asyncio.sleep(1)
         path = f"{dl_path}/{filename}.png"
         path = path.replace('//','/');
-        print(DINFO() + f"File exists : {os.path.exists(path)}" + C.END)
+        DINFO(f"File exists : {os.path.exists(path)}")
 
     driver.quit()
     return path
@@ -154,16 +153,16 @@ async def reaction_to_quote(payload):
             await message.remove_reaction(guild_data['emoji'], pinuser)
             return
     except Exception as e:
-        print(DERROR() + f"Unknown error {e}" + C.END)
+        DERROR(f"Unknown error {e}")
         return
 
     reactions = message.reactions
     for react in reactions:
         if bot.user in await react.users().flatten():
-            print(DINFO() + "Le message a déjà été cité" + C.END)
+            DINFO(f"Le message a déjà été cité")
             return
 
-    print(DOK() + f"New quote" + C.END)
+    DOK(f"New quote")
 
     channel = False
     if 'channel' in guild_data and guild_data['channel']:
@@ -171,13 +170,13 @@ async def reaction_to_quote(payload):
     if not channel:
         channel = message_channel
 
-    print(DINFO() + f"Message length : {len(message_content)}")
+    DINFO(f"Message length : {len(message_content)}")
     if len(message_content) == 0:
-        print(DERROR() + "Message vide" + C.END)
+        DERROR(f"Message vide")
         await channel.send("Ce message est vide, et ne peut pas être quote")
         return
     if len(message_content) > 500:
-        print(DERROR() + "Message trop long" + C.END)
+        DERROR(f"Message trop long")
         await channel.send("Ce message est trop long pour être quote")
         return
 
@@ -192,13 +191,13 @@ async def reaction_to_quote(payload):
     try:
         await pinuser.create_dm()
     except Exception as e:
-        print(DERROR() + f"DM channel with {pinuser.mention} cannot be created" + C.END)
+        DERROR(f"DM channel with {pinuser.mention} cannot be created")
         await channel.send(f"{pinuser.mention} Merci d'autoriser les mps avec le serveur, pour utiliser le bot", delete_after=5)
         return
     try:
         confirmation = await pinuser.dm_channel.send(confirmation_content)
     except Exception as e:
-        print(DERROR() + f"Cannot DM {pinuser.mention}" + C.END)
+        DERROR(f"Cannot DM {pinuser.mention}")
         await channel.send(f"{pinuser.mention} Impossible de t'envoyer un mp ...", delete_after=5)
         return
 
@@ -208,42 +207,42 @@ async def reaction_to_quote(payload):
     def check(reaction, user):
         if user.id == bot.user.id:
             return
-        print(DINFO() + f"Reaction {reaction} - {user}" + C.END)
+        DINFO(f"Reaction {reaction} - {user}")
         return (str(reaction.emoji) == "☑️" or str(reaction.emoji) == "❎") and reaction.message.id == confirmation.id and user.id == pinuser.id
 
     try:
         react, user = await bot.wait_for('reaction_add', check = check, timeout=30)
         if str(react) == "❎":
-            print(DERROR() + f"Cancelled by user" + C.END)
+            DERROR(f"Cancelled by user")
             await confirmation.edit(content = confirmation_content + f"\n*Annulé par {pinuser.mention}.*")
             # await confirmation.edit(delete_after=10)
             await message.remove_reaction(guild_data['emoji'], pinuser)
             return
     except asyncio.exceptions.TimeoutError:
-        print(DERROR() + f"Cancelled by Timeout" + C.END)
+        DERROR(f"Cancelled by Timeout")
         await confirmation.edit(content = confirmation_content + f"\n*Annulé par Timeout.*")
         await message.remove_reaction(guild_data['emoji'], pinuser)
     except Exception as e:
-        print(DERROR() + f"Unknow error {e}" + C.END)
+        DERROR(f"Unknow error {e}")
         await confirmation.edit(content = confirmation_content + f"\n*Annulé par Timeout.*")
         # await confirmation.edit(delete_after=10)
         await message.remove_reaction(guild_data['emoji'], pinuser)
         return
 
     await confirmation.edit(content = confirmation_content + f"\n<a:loading:809405677297729547> *Génération de la citation, ceci peut prendre jusqu'à 30 secondes*")
-    print(DINFO() + f"dl_path\t\t{dl_path}" + C.END)
+    DINFO(f"dl_path\t\t{dl_path}")
 
-    print(DINFO() + f"Message content\t{message_content}" + C.END)
+    DINFO(f"Message content\t{message_content}")
     caption = f"{author.display_name} ~ {message.created_at.day:02d}/{message.created_at.month:02d}/{message.created_at.year} {message.created_at.hour:02d}:{message.created_at.minute:02d}"
-    print(DINFO() + f"Caption\t\t{caption}" + C.END)
+    DINFO(f"Caption\t\t{caption}")
 
     filepath = await get_quote("button download", message_content, caption, dl_path)
-    print(DOK() + f"File saved at {filepath}" + C.END)
+    DOK(f"File saved at {filepath}")
 
     fp =  discord.File(filepath)
 
     msg = random.choice(msgs).format(user.mention, author.mention)
-    print(DINFO() + f"Random message : {msg}" + C.END)
+    DINFO(f"Random message : {msg}")
 
     embed = discord.Embed(description = msg + f"\n[pin]({message.jump_url})")
     # embed.set_footer(text="Quotes", icon_url=bot.user.avatar_url)
@@ -251,7 +250,7 @@ async def reaction_to_quote(payload):
         file_message = await channel.send(embed = embed, file = fp)
         # file_message = await channel.send(content = msg, file = fp)
     except Exception as e:
-        print(DERROR() + f"Erreur innatendue : {e}" + C.END)
+        DERROR(f"Erreur innatendue : {e}")
         await confirmation.edit(content = confirmation.content + f"\nErreur innatendue. Impossible d'envoyer le message")
         await message.remove_reaction(guild_data['emoji'], pinuser)
         return
@@ -265,7 +264,7 @@ async def reaction_to_quote(payload):
 
 TOKEN = os.getenv("TOKEN")
 if not TOKEN:
-    print(DERROR() + "Token couldnt be loaded" + C.END)
+    DERROR(f"Token couldnt be loaded")
     exit()
 
 pwd = os.path.dirname(os.path.abspath(__file__))
@@ -273,11 +272,11 @@ dl_path = pwd + "/quotes"
 guilds_path = pwd + "/guilds"
 if not os.path.exists(dl_path):
     os.mkdir(dl_path)
-    print(DINFO() + f"dl_path {dl_path} has been created" + C.END)
+    DINFO(f"dl_path {dl_path} has been created")
 
 if not os.path.exists(guilds_path):
     os.mkdir(guilds_path)
-    print(DINFO() + f"guilds_path {guilds_path} has been created" + C.END)
+    DINFO(f"guilds_path {guilds_path} has been created")
 
 # print(intents)
 # for intent in intents:
@@ -290,8 +289,8 @@ if os.path.exists(prefixes_path):
         try:
             custom_prefixes = json.load(fo)
         except Exception as e:
-            print(DERROR() + f"Erreur innatendue {e}" + C.END)
-            print(DINFO() + f"Couldn't load custom_prefixes" + C.END)
+            DERROR(f"Erreur innatendue {e}")
+            DINFO(f"Couldn't load custom_prefixes")
             custom_prefixes = {}
 else:
     custom_prefixes = {}
@@ -322,14 +321,14 @@ msgs = [
 
 @bot.command(name="custom_quote", description="Create a custom quote")
 async def custom_quote(ctx, *arguments):
-    print(DOK() + f"Custom quote by {ctx.author}" + C.END)
+    DOK(f"Custom quote by {ctx.author}")
     arguments = " ".join(arguments)
-    print(DINFO() + f"Message : {arguments}" + C.END)
+    DINFO(f"Message : {arguments}")
     if "| " in arguments:
         message_content = arguments.split("|")[0].strip()
         caption = arguments.split("|")[1].strip()
     else:
-        print(DINFO() + "Le message ne contient pas de caption" + C.END)
+        DINFO(f"Le message ne contient pas de caption")
         message_content = arguments.split("|")[0].strip()
         caption =""
     if len(message_content) == 0:
@@ -354,7 +353,7 @@ async def custom_quote(ctx, *arguments):
     # loading = bot.get_emoji(809405677297729547)
     # await ctx.message.add_reaction(loading)
     filepath = await get_quote("button download", message_content, caption, dl_path)
-    print(DOK() + f"filepath : {filepath}" + C.END)
+    DOK(f"filepath : {filepath}")
 
     fp =  discord.File(filepath)
     msg = f"Citation faite par {ctx.author.mention}"
@@ -365,15 +364,15 @@ async def custom_quote(ctx, *arguments):
 
 @bot.event
 async def on_ready():
-    print(DINFO() + f'{bot.user} has connected to Discord!' + C.END)
+    DINFO(f"{bot.user} has connected to Discord!")
     game = discord.Game(f".help | {len(bot.guilds)}")
     await bot.change_presence(status=discord.Status.online, activity=game)
 
 async def on_guild_join(self, guild):
-    print(DOK() + f"==========" + C.END)
-    print(DOK() + f"New guild" + C.END)
-    print(DOK() + f"{guild.name}" + C.END)
-    print(DOK() + f"==========" + C.END)
+    DOK(f"==========")
+    DOK(f"New guild")
+    DOK(f"{guild.name}")
+    DOK(f"==========")
     game = discord.Game(f".help | {len(bot.guilds)}")
     await bot.change_presence(status=discord.Status.online, activity=game)
 
@@ -391,7 +390,7 @@ async def set_prefix(ctx, prefix):
     with open(prefixes_path, "w") as fw:
         json.dump(custom_prefixes, fw, indent=2)
     await ctx.send(f"Préfixe changé en {prefix}!")
-    print(DINFO() + f"{ctx.guild.name} | {ctx.guild.id} \t| Nouveau préfixe {custom_prefixes[ctx.guild.id]}" + C.END)
+    DINFO(f"{ctx.guild.name} | {ctx.guild.id} \t| Nouveau préfixe {custom_prefixes[ctx.guild.id]}")
 
 
 @bot.event
@@ -425,14 +424,11 @@ async def set_quote_channel(ctx, argument):
     await save_guild(ctx.guild.id, guild_data)
 
     await ctx.send(f"Les citations seront envoyés dans {channel.mention}")
-    print(DINFO() +
-          f"{ctx.guild.name} | {ctx.guild.id} \t| Channel choisi: {channel} - {channel.id}" +
-          C.END)
+    DINFO(f"{ctx.guild.name} | {ctx.guild.id} \t| Channel choisi: {channel} - {channel.id}")
 
 
 @bot.command(name = "set_quote_reaction", description="Set emoji that will quote messages")
-async def set_quote_reaction(ctx, argument):
-
+async def set_quote_reaction(ctx, argument:discord.Emoji):
     try:
         emoji = await commands.EmojiConverter().convert(ctx, argument)
     except errors.EmojiNotFound:
@@ -440,6 +436,7 @@ async def set_quote_reaction(ctx, argument):
         return
     except Exception as e:
         await ctx.send("Erreur inattendue")
+        DERROR(f"Unknow error : {e}")
         return
 
     # print(emoji)
@@ -466,7 +463,7 @@ async def set_quote_reaction(ctx, argument):
     await save_guild(ctx.guild.id, guild_data)
 
     await ctx.send(f"{emoji} a été choisi comme réaction de citation")
-    print(DINFO() + f"{ctx.guild.name} | {ctx.guild.id} \t| Reaction choisie pour {emoji.name} - {emoji.id}" + C.END)
+    DINFO(f"{ctx.guild.name} | {ctx.guild.id} \t| Reaction choisie pour {emoji.name} - {emoji.id}")
 
 
 async def load_guild(guild_id):
@@ -478,10 +475,10 @@ async def load_guild(guild_id):
             try:
                 guild_data = json.load(fo)
             except Exception as e:
-                print(DERROR() + f"{guild_id} : guild_data unreadable" + C.END)
+                DERROR(f"{guild_id} : guild_data unreadable")
             else:
                 if not 'guild_id' in guild_data or guild_data['guild_id'] != guild_id:
-                    print(DERROR() + f"{guild_id} : guild_data incorrect" + C.END)
+                    DERROR(f"{guild_id} : guild_data incorrect")
                 else:
                     return guild_data
 
@@ -495,7 +492,7 @@ async def load_guild(guild_id):
     }
 
     await save_guild(guild_id, guild_data)
-    print(DINFO() + f"New guild file created : {guild_id}" + C.END)
+    DINFO(f"New guild file created : {guild_id}")
     return guild_data
 
 async def save_guild(guild_id, guild_data):
@@ -510,31 +507,31 @@ async def save_guild(guild_id, guild_data):
 async def help(ctx):
 
     embed = discord.Embed(title = "**Quotes - Help**", description = f"""**Fonctionnement**
-    Une réaction doit être set via la commande `.set_quote_reaction` pour permettre au bot de quote des messages.
+    Une réaction doit être set via la commande `{prefix}set_quote_reaction` pour permettre au bot de quote des messages.
     Une quote avec le contenu du message et la caption *"Autheur ~ Date Heure"* sera généré en moins de 30 secondes
-    La quote sera envoyé sous format image sur discord, dans le channel choisi via la commande `.set_quote_channel` ou sinon dans le channel du message originel.
+    La quote sera envoyé sous format image sur discord, dans le channel choisi via la commande `{prefix}set_quote_channel` ou sinon dans le channel du message originel.
     Une quote peut être générée par un membre toute les 20h.\n""", color=0x29c87e)
     embed.timestamp = datetime.utcnow()
     try:
         embed.set_footer(text="Quotes", icon_url=bot.user.avatar_url)
     except Exception as e:
-        print(DINFO() + f"avatar url get failed" + C.END)
+        DINFO(f"avatar url get failed")
 
-    embed.add_field(name = "**❯** `.set_quote_reaction <reaction>`", value = "Changer la réaction des quotes", inline=True)
-    embed.add_field(name = "**❯** `.set_quote_channel <#text_channel>`", value = "Changer le channel des quotes", inline=True)
-    embed.add_field(name = "**❯** `.set_prefix <prefix>`", value = "Changer le préfixe", inline=True)
+    embed.add_field(name = f"**❯** `{prefix}set_quote_reaction <reaction>`", value = "Changer la réaction des quotes", inline=True)
+    embed.add_field(name = f"**❯** `{prefix}set_quote_channel <#text_channel>`", value = "Changer le channel des quotes", inline=True)
+    embed.add_field(name = f"**❯** `{prefix}set_prefix <prefix>`", value = "Changer le préfixe", inline=True)
 
     guild_data = await load_guild(ctx.guild.id)
     embed.add_field(name = " ‎", value = f"Prefix : {custom_prefixes[ctx.guild.id] if ctx.guild.id in custom_prefixes else default_prefixes} - Reaction : {guild_data['emoji']} - Channel : <#{guild_data['channel']}>")
 
     # content = f"""
-    # **❯** `.set_quote_reaction <reaction>` - Pour changer la réaction des quotes
-    # **❯** `.set_quote_channel <#text_channel>` - Pour changer le channel des quotes
-    # **❯** `.set_prefix <prefix>` - Pour changer le préfixe.
+    # **❯** `{prefix}set_quote_reaction <reaction>` - Pour changer la réaction des quotes
+    # **❯** `{prefix}set_quote_channel <#text_channel>` - Pour changer le channel des quotes
+    # **❯** `{prefix}set_prefix <prefix>` - Pour changer le préfixe.
     # ** -- Fonctionnement -- **
-    # Une réaction doit être set via la commande `.set_quote_reaction` pour permettre au bot de quote des messages.
+    # Une réaction doit être set via la commande `{prefix}set_quote_reaction` pour permettre au bot de quote des messages.
     # Une quote avec le contenu du message et la caption "Autheur ~ Date Heure" sera généré en moins de 30 secondes
-    # La quote sera envoyé sous format image sur discord, dans le channel choisi via la commande `.set_quote_channel` ou sinon dans le channel du message originel.
+    # La quote sera envoyé sous format image sur discord, dans le channel choisi via la commande `{prefix}set_quote_channel` ou sinon dans le channel du message originel.
     # Une quote peut être générée par un membre toute les 20h.
     # """
     # await ctx.send(content = content)

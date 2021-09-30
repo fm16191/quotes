@@ -8,7 +8,7 @@ from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 # from selenium.common.exceptions import TimeoutException
 # from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
 from selenium.webdriver.firefox.options import Options
-import os
+import os, requests, base64
 import random
 import json
 from datetime import datetime, timedelta
@@ -238,16 +238,23 @@ async def reaction_to_quote(payload):
 
     filepath = await get_quote("button download", message_content, caption, dl_path)
     DOK(f"File saved at {filepath}")
+    img_url = generate_image(filepath)
 
-    fp =  discord.File(filepath)
+    # fp =  discord.File(filepath)
 
     msg = random.choice(msgs).format(user.mention, author.mention)
+    msg = random.choice(msgs2).format(message.author.mention)
     DINFO(f"Random message : {msg}")
 
-    embed = discord.Embed(description = msg + f"\n[pin]({message.jump_url})")
+    # embed = discord.Embed(description = msg + f"\n[pin]({message.jump_url})")
+    # embed.set_image(url=img_url)
+    em = discord.Embed(description=msg + f" — [Jette un œil au contexte]({message.jump_url}) !", color=0xfad98c, timestamp=datetime.utcnow())
+    em.set_image(url=img_url)
+    em.set_footer(text=f"Quoted by {pinuser.display_name}", icon_url="https://cdn-icons-png.flaticon.com/512/792/792148.png")
+
     # embed.set_footer(text="Quotes", icon_url=bot.user.avatar_url)
     try:
-        file_message = await channel.send(embed = embed, file = fp)
+        file_message = await channel.send(embed = em) #, file = fp)
         # file_message = await channel.send(content = msg, file = fp)
     except Exception as e:
         DERROR(f"Erreur innatendue : {e}")
@@ -295,7 +302,7 @@ if os.path.exists(prefixes_path):
 else:
     custom_prefixes = {}
 
-default_prefixes = ['.']
+default_prefixes = [';']
 
 async def determine_prefix(bot, message):
     guild = message.guild
@@ -305,7 +312,8 @@ async def determine_prefix(bot, message):
     else:
         return default_prefixes
 
-intents = discord.Intents.all()
+# intents = discord.Intents.all()
+intents = discord.Intents(messages=True, voice_states=True, members=True, guilds=True, reactions=True)
 bot = commands.Bot(intents = intents, command_prefix = determine_prefix, help_command=None)
 # client = discord.Client(intents = intents)
 
@@ -318,6 +326,41 @@ msgs = [
    "Mis en avant par {}, écoutons ensemble ce que {} a à nous partager :"
 ]
 
+msgs2 = [
+   "On a décidé d'afficher {} !",
+   "Hop, {} ne sera pas manqué.",
+   "La bêtise de {} est gravé sur le marbre.",
+   "Le <:BigBrain:825476978097389589> de {} est mis en lumière !",
+   "{} nous montre le chemin du savoir...",
+   "Écoutons ensemble ce que {} a à nous partager."
+]
+
+def generate_image(filepath):
+    """ Posts image on imgbb and returns direct link """
+
+    with open(filepath, "rb") as file:
+        url = "https://api.imgbb.com/1/upload"
+        # TODO: imgbb key to .env 
+        payload = {
+            "key": 'cf4d93db6f0ba069e540e2af12be2d3e',
+            "image": base64.b64encode(file.read()),
+        }
+        res = requests.post(url, payload)
+    os.remove(filepath)
+    return res.json()['data']['url']
+
+@bot.command()
+async def test(ctx, message:discord.Message):
+    pinuser = ctx.author
+    msg = random.choice(msgs2).format(message.author.mention)
+    em = discord.Embed(description=msg + f" — [Jette un œil au contexte]({message.jump_url}) !", color=0xfad98c, timestamp=datetime.utcnow())
+    em.set_image(url="https://i.ibb.co/cQzngh4/2021-09-19-21-02d-12-lapin.png")
+    em.set_footer(text=f"Quoted by {pinuser.display_name}", icon_url="https://cdn-icons-png.flaticon.com/512/792/792148.png")
+
+    # legende = f"Initially posted in {message.channel.mention} (**{message.guild}**) <t:{int(datetime.timestamp(message.created_at+timedelta(hours=2)))}:R>. [Jump to original message]({message.jump_url})."
+    # em.add_field(name="—", value=legende)
+    # em.add_field(name="—", value=f"Posté initialement sur {message.channel.mention} (**{message.guild}**) on **{message.created_at.strftime('%B, %d %Y — %H:%M')}**. [Jump to original message]({message.jump_url}).")
+    await ctx.send(embed=em)
 
 @bot.command(name="custom_quote", description="Create a custom quote")
 async def custom_quote(ctx, *arguments):
@@ -428,7 +471,7 @@ async def set_quote_channel(ctx, argument):
 
 
 @bot.command(name = "set_quote_reaction", description="Set emoji that will quote messages")
-async def set_quote_reaction(ctx, argument:discord.Emoji):
+async def set_quote_reaction(ctx, argument:str):
     try:
         emoji = await commands.EmojiConverter().convert(ctx, argument)
     except errors.EmojiNotFound:
@@ -507,9 +550,9 @@ async def save_guild(guild_id, guild_data):
 async def help(ctx):
 
     embed = discord.Embed(title = "**Quotes - Help**", description = f"""**Fonctionnement**
-    Une réaction doit être set via la commande `{prefix}set_quote_reaction` pour permettre au bot de quote des messages.
-    Une quote avec le contenu du message et la caption *"Autheur ~ Date Heure"* sera généré en moins de 30 secondes
-    La quote sera envoyé sous format image sur discord, dans le channel choisi via la commande `{prefix}set_quote_channel` ou sinon dans le channel du message originel.
+    Une réaction doit être set via la commande `{ctx.prefix}set_quote_reaction` pour permettre au bot de quote des messages.
+    Une quote avec le contenu du message et la caption *"Auteur ~ Date Heure"* sera généré en moins de 30 secondes
+    La quote sera envoyé sous format image sur discord, dans le channel choisi via la commande `{ctx.prefix}set_quote_channel` ou sinon dans le channel du message originel.
     Une quote peut être générée par un membre toute les 20h.\n""", color=0x29c87e)
     embed.timestamp = datetime.utcnow()
     try:
@@ -517,9 +560,9 @@ async def help(ctx):
     except Exception as e:
         DINFO(f"avatar url get failed")
 
-    embed.add_field(name = f"**❯** `{prefix}set_quote_reaction <reaction>`", value = "Changer la réaction des quotes", inline=True)
-    embed.add_field(name = f"**❯** `{prefix}set_quote_channel <#text_channel>`", value = "Changer le channel des quotes", inline=True)
-    embed.add_field(name = f"**❯** `{prefix}set_prefix <prefix>`", value = "Changer le préfixe", inline=True)
+    embed.add_field(name = f"**❯** `{ctx.prefix}set_quote_reaction <reaction>`", value = "Changer la réaction des quotes", inline=True)
+    embed.add_field(name = f"**❯** `{ctx.prefix}set_quote_channel <#text_channel>`", value = "Changer le channel des quotes", inline=True)
+    embed.add_field(name = f"**❯** `{ctx.prefix}set_prefix <prefix>`", value = "Changer le préfixe", inline=True)
 
     guild_data = await load_guild(ctx.guild.id)
     embed.add_field(name = " ‎", value = f"Prefix : {custom_prefixes[ctx.guild.id] if ctx.guild.id in custom_prefixes else default_prefixes} - Reaction : {guild_data['emoji']} - Channel : <#{guild_data['channel']}>")

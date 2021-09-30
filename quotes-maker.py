@@ -315,7 +315,9 @@ msgs = [
    "La bêtise de {} est gravé sur le marbre.",
    "Le <:BigBrain:825476978097389589> de {} est mis en lumière !",
    "{} nous montre le chemin du savoir...",
-   "Écoutons ensemble ce que {} a à nous partager."
+   "Écoutons ensemble ce que {} a à nous partager.",
+   "L'histoire ne pourra plus oublier {}.",
+   "On ne retiendra malheureusement que ça de {}..."
 ]
 
 def generate_image(filepath):

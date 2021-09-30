@@ -239,23 +239,16 @@ async def reaction_to_quote(payload):
     filepath = await get_quote("button download", message_content, caption, dl_path)
     DOK(f"File saved at {filepath}")
     img_url = generate_image(filepath)
-
-    # fp =  discord.File(filepath)
-
-    msg = random.choice(msgs).format(user.mention, author.mention)
-    msg = random.choice(msgs2).format(message.author.mention)
+    msg = random.choice(msgs).format(author.mention)
     DINFO(f"Random message : {msg}")
 
-    # embed = discord.Embed(description = msg + f"\n[pin]({message.jump_url})")
-    # embed.set_image(url=img_url)
     em = discord.Embed(description=msg + f" — [Jette un œil au contexte]({message.jump_url}) !", color=0xfad98c, timestamp=datetime.utcnow())
     em.set_image(url=img_url)
     em.set_footer(text=f"Quoted by {pinuser.display_name}", icon_url="https://cdn-icons-png.flaticon.com/512/792/792148.png")
 
     # embed.set_footer(text="Quotes", icon_url=bot.user.avatar_url)
     try:
-        file_message = await channel.send(embed = em) #, file = fp)
-        # file_message = await channel.send(content = msg, file = fp)
+        file_message = await channel.send(embed = em)
     except Exception as e:
         DERROR(f"Erreur innatendue : {e}")
         await confirmation.edit(content = confirmation.content + f"\nErreur innatendue. Impossible d'envoyer le message")
@@ -302,7 +295,7 @@ if os.path.exists(prefixes_path):
 else:
     custom_prefixes = {}
 
-default_prefixes = [';']
+default_prefixes = ['.']
 
 async def determine_prefix(bot, message):
     guild = message.guild
@@ -312,21 +305,11 @@ async def determine_prefix(bot, message):
     else:
         return default_prefixes
 
-# intents = discord.Intents.all()
 intents = discord.Intents(messages=True, voice_states=True, members=True, guilds=True, reactions=True)
 bot = commands.Bot(intents = intents, command_prefix = determine_prefix, help_command=None)
 # client = discord.Client(intents = intents)
 
 msgs = [
-   "{} a décidé d'afficher {}",
-   "Hop, {} n'a pas manqué {}",
-   "{} a gravé à jamais la bêtise de {}",
-   "{} a mis en lumière le <:BigBrain:825476978097389589> de {}",
-   "En accord avec {}, {} nous montre le chemin du savoir ...",
-   "Mis en avant par {}, écoutons ensemble ce que {} a à nous partager :"
-]
-
-msgs2 = [
    "On a décidé d'afficher {} !",
    "Hop, {} ne sera pas manqué.",
    "La bêtise de {} est gravé sur le marbre.",
@@ -348,19 +331,6 @@ def generate_image(filepath):
         res = requests.post(url, payload)
     os.remove(filepath)
     return res.json()['data']['url']
-
-@bot.command()
-async def test(ctx, message:discord.Message):
-    pinuser = ctx.author
-    msg = random.choice(msgs2).format(message.author.mention)
-    em = discord.Embed(description=msg + f" — [Jette un œil au contexte]({message.jump_url}) !", color=0xfad98c, timestamp=datetime.utcnow())
-    em.set_image(url="https://i.ibb.co/cQzngh4/2021-09-19-21-02d-12-lapin.png")
-    em.set_footer(text=f"Quoted by {pinuser.display_name}", icon_url="https://cdn-icons-png.flaticon.com/512/792/792148.png")
-
-    # legende = f"Initially posted in {message.channel.mention} (**{message.guild}**) <t:{int(datetime.timestamp(message.created_at+timedelta(hours=2)))}:R>. [Jump to original message]({message.jump_url})."
-    # em.add_field(name="—", value=legende)
-    # em.add_field(name="—", value=f"Posté initialement sur {message.channel.mention} (**{message.guild}**) on **{message.created_at.strftime('%B, %d %Y — %H:%M')}**. [Jump to original message]({message.jump_url}).")
-    await ctx.send(embed=em)
 
 @bot.command(name="custom_quote", description="Create a custom quote")
 async def custom_quote(ctx, *arguments):
@@ -471,7 +441,7 @@ async def set_quote_channel(ctx, argument):
 
 
 @bot.command(name = "set_quote_reaction", description="Set emoji that will quote messages")
-async def set_quote_reaction(ctx, argument:str):
+async def set_quote_reaction(ctx, argument:discord.Emoji):
     try:
         emoji = await commands.EmojiConverter().convert(ctx, argument)
     except errors.EmojiNotFound:

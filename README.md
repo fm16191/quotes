@@ -10,7 +10,7 @@ Quote and pin **the most memorable short messages** forever in a **unique and or
 
 # 🖼️ Demo
 
-images here
+<img src="https://raw.githubusercontent.com/vdElyn/quotes/%F0%9F%93%96-Adding-README.md/demo.png" alt="demo">
 
 # Configuration
 

@@ -24,8 +24,6 @@ import discord.utils
 import dotenv
 dotenv.load_dotenv()
 
-# https://discord.com/api/oauth2/authorize?client_id=831875019071291433&permissions=8&scope=bot
-
 def DOK(content):
     print(f"\033[92m[{datetime.now().strftime('%Y %b.%d %H:%M:%S')}] {content}\033[0m")
 def DINFO(content):
@@ -53,11 +51,10 @@ class C:
 
 async def get_quote(method, message, caption, dl_path):
     fp = webdriver.FirefoxProfile()
-    fp.set_preference("browser.download.folderList", 2) # 0 means to download to the desktop, 1 means to download to the default "Downloads" directory, 2 means to use the directory
+    fp.set_preference("browser.download.folderList", 2) # 0 -> desktop, 1 -> default "Downloads", 2 -> current directory
     fp.set_preference("browser.helperApps.alwaysAsk.force", False)
     fp.set_preference("browser.download.manager.showWhenStarting",False)
     fp.set_preference("browser.download.dir", dl_path)
-    # fp.set_preference("browser.download.dir", os.getcwd())
     fp.set_preference('browser.helperApps.neverAsk.saveToDisk', 'application/download')
     fp.set_preference('browser.helperApps.neverAsk.saveToDisk', 'text/plain,text/csv,application/csv,application/vnd.ms-excel,text/comma-separat‌​ed-values,application/excel,application/octet-stream')
     fp.set_preference("browser.helperApps.neverAsk.openFile", "image/png, text/html, image/tiff, text/csv, application/zip, application/octet-stream")
@@ -135,7 +132,7 @@ async def get_quote(method, message, caption, dl_path):
 
 async def reaction_to_quote(payload):
     pinuser = bot.get_user(payload.user_id)
-    if pinuser.bot or payload.guild_id == None: return # Bot ou Réaction en MP
+    if pinuser.bot or payload.guild_id == None: return # is bot or dm channel
 
     react = payload.emoji
     guild_data = await load_guild(payload.guild_id) # Load guild_data
@@ -232,6 +229,10 @@ async def reaction_to_quote(payload):
     await confirmation.edit(content = confirmation_content + f"\n<a:loading:809405677297729547> *Génération de la citation, ceci peut prendre jusqu'à 30 secondes*")
     DINFO(f"dl_path\t\t{dl_path}")
 
+    #TODO Fix empty message content when a channel is mentionned
+    #TODO Fix GMT timedate.
+    #TODO Investigate about random bot crashes. Might be webdriver timeouts or other.
+
     DINFO(f"Message content\t{message_content}")
     caption = f"{author.display_name} ~ {message.created_at.day:02d}/{message.created_at.month:02d}/{message.created_at.year} {message.created_at.hour:02d}:{message.created_at.minute:02d}"
     DINFO(f"Caption\t\t{caption}")
@@ -242,7 +243,7 @@ async def reaction_to_quote(payload):
     msg = random.choice(msgs).format(author.mention)
     DINFO(f"Random message : {msg}")
 
-    em = discord.Embed(description=msg + f" — [Jette un œil au contexte]({message.jump_url}) !", color=0xfad98c, timestamp=datetime.utcnow())
+    em = discord.Embed(description=f"{msg} — [Jette un œil au contexte]({message.jump_url}) !", color=0xfad98c, timestamp=datetime.utcnow())
     em.set_image(url=img_url)
     em.set_footer(text=f"Quoted by {pinuser.display_name}", icon_url="https://cdn-icons-png.flaticon.com/512/792/792148.png")
 
@@ -334,6 +335,9 @@ def generate_image(filepath):
     os.remove(filepath)
     return res.json()['data']['url']
 
+
+#TODO custom quote randomly timeouts
+
 @bot.command(name="custom_quote", description="Create a custom quote")
 async def custom_quote(ctx, *arguments):
     DOK(f"Custom quote by {ctx.author}")
@@ -361,7 +365,6 @@ async def custom_quote(ctx, *arguments):
         channel = ctx.channel
 
     # await bot.add_reaction(ctx.message, "a:loading:809405677297729547")
-    # await ctx.message.add_reaction("a:loading:809405677297729547")
     await ctx.message.add_reaction("<a:loading:809405677297729547>")
     # emoji = discord.utils.get(bot.get_all_emojis(), name='loading')
     # await bot.add_reaction(ctx.message, emoji)
@@ -520,6 +523,8 @@ async def save_guild(guild_id, guild_data):
 
 @bot.command()
 async def help(ctx):
+
+    #TODO Add custom_quote help entry
 
     embed = discord.Embed(title = "**Quotes - Help**", description = f"""**Fonctionnement**
     Une réaction doit être set via la commande `{ctx.prefix}set_quote_reaction` pour permettre au bot de quote des messages.

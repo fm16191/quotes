@@ -2,7 +2,7 @@ from selenium import webdriver
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options
-import os, requests, base64
+import os
 import random
 import json
 from datetime import datetime, timedelta
@@ -245,12 +245,14 @@ async def reaction_to_quote(payload):
 
     filepath = await get_quote(METHOD.BUTTON, message_content, caption, dl_path)
     DOK(f"File saved at {filepath}")
-    img_url = generate_image(filepath)
+
     msg = random.choice(msgs).format(author.mention)
     DINFO(f"Random message : {msg}")
 
     em = discord.Embed(description=f"{msg} — [Jette un œil au contexte]({message.jump_url}) !", color=0xfad98c, timestamp=datetime.utcnow())
-    em.set_image(url=img_url)
+    em.set_image(url=f"attachment://quote.png")
+    file = discord.File(filepath, filename="quote.png")
+
     em.set_footer(text=f"Quoted by {pinuser.display_name}", icon_url="https://cdn-icons-png.flaticon.com/512/792/792148.png")
 
     # embed.set_footer(text="Quotes", icon_url=bot.user.avatar_url)
@@ -328,21 +330,6 @@ msgs = [
    "L'histoire ne pourra plus oublier {}.",
    "On ne retiendra malheureusement que ça de {}..."
 ]
-
-def generate_image(filepath):
-    """ Posts image on imgbb and returns direct link """
-
-    with open(filepath, "rb") as file:
-        url = "https://api.imgbb.com/1/upload"
-        # TODO: imgbb key to .env 
-        payload = {
-            "key": 'cf4d93db6f0ba069e540e2af12be2d3e',
-            "image": base64.b64encode(file.read()),
-        }
-        res = requests.post(url, payload)
-    os.remove(filepath)
-    return res.json()['data']['url']
-
 
 #TODO custom quote randomly timeouts
 

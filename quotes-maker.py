@@ -445,17 +445,47 @@ async def set_quote_channel(ctx, argument):
     DINFO(f"{ctx.guild.name} | {ctx.guild.id} \t| Channel choisi: {channel} - {channel.id}")
 
 
-@bot.command(name = "set_quote_reaction", description="Set emoji that will quote messages")
-async def set_quote_reaction(ctx, argument:discord.Emoji):
-    try:
-        emoji = await commands.EmojiConverter().convert(ctx, argument)
-    except errors.EmojiNotFound:
-        await ctx.send(f"Soit ce n'est pas un émoji, soit il est introuvable (merci d'essayer un autre)")
-        return
-    except Exception as e:
-        await ctx.send("Erreur inattendue")
-        DERROR(f"Unknow error : {e}")
-        return
+@bot.command(name = "set_quote_reaction", description="Define the emoji that will quote the messages")
+async def set_quote_reaction(ctx, argument):
+    """Define the emoji that will quote the messages"""
+
+    print(argument)
+    print(type(argument))
+
+    # print(bot.emojis)
+
+    fo = open("emoji_map.json", "r")
+    emojis = json.load(fo)
+    fo.close()
+
+    quote_reaction = None
+
+    for emoji in emojis:
+        if emojis[emoji] == argument:
+            quote_reaction = emojis[emoji]
+            break;
+
+    # emoji = await commands.PartialEmojiConverter().convert(ctx, argument)
+    # print(emoji)
+    # print(quote_reaction)
+
+    if not quote_reaction:
+        try:
+            emoji = await commands.EmojiConverter().convert(ctx, argument)
+            if not emoji.guild == ctx.guild: # emoji.is_usable() or not
+                await ctx.send("L'émoji doit provenir de cette guild")
+                # raise Exception("EmojiNotGuild")
+                return
+            quote_reaction = emoji
+        except errors.EmojiNotFound:
+            await ctx.send(f"Soit ce n'est pas un émoji, soit il est introuvable... \n*Merci d'essayer un autre*")
+            return
+        except Exception as e:
+            await ctx.send("Erreur inattendue")
+            DERROR(f"Unknow error : {e}")
+            return
+
+    
 
     # print(emoji)
     # print(emoji.animated)
@@ -472,16 +502,13 @@ async def set_quote_reaction(ctx, argument:discord.Emoji):
     # print(emoji.user)
     # print(emoji.is_usable())
     # print(emoji.url_as())
-    if not emoji.guild == ctx.guild: # emoji.is_usable() or not
-        await ctx.send("L'émoji doit provenir de cette guild")
-        return
 
     guild_data = await load_guild(ctx.guild.id)
-    guild_data['emoji'] = str(emoji)
+    guild_data['emoji'] = str(quote_reaction)
     await save_guild(ctx.guild.id, guild_data)
 
-    await ctx.send(f"{emoji} a été choisi comme réaction de citation")
-    DINFO(f"{ctx.guild.name} | {ctx.guild.id} \t| Reaction choisie pour {emoji.name} - {emoji.id}")
+    await ctx.send(f"{quote_reaction} a été choisi comme réaction de citation")
+    DINFO(f"{ctx.guild.name} | {ctx.guild.id} \t| Reaction choisie pour {quote_reaction}")
 
 
 async def load_guild(guild_id):

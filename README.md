@@ -6,7 +6,7 @@
 
 Quote and pin **the most memorable short messages** forever in a **unique and original quote design** by **reacting with a specific emoji** under someone's message!
 
-❯ **Invite the bot to your server:**  
+❯ **[Invite the bot to your server](https://discord.com/oauth2/authorize?client_id=831875019071291433&permissions=388160&scope=bot)**
 
 # 🖼️ Demo
 
@@ -20,6 +20,7 @@ After the bot arrives, you have to **configure the emoji with which you want to 
 
 |  Command  | Description | Default
 | ------------- | ------------- | --- |
+| `.help` | Prints helps message | `.help` |
 | `.set_prefix <prefix>` | Set another **prefix** for the bot | `.` |
 | `.set_quote_reaction <emoji>`  | Set a new reaction **emoji** to Quote a message | 🏅 |
 | `.set_quote_channel <#text_channel>`  | Set the **channel** where the Quotes are posted  | Current channel |
@@ -33,6 +34,11 @@ For example, you can limit each member to **quoting one post every 12 hours.**
 
 # 🔴 ToDo
 
-- [x] Host quotes to Embed them 
-- [ ] Add an reaction emoji by default
-
+- [x] Add an reaction emoji by default
+- [ ] Add custom_quote help entry
+- [ ] Ask user confirmation before sending on the server. (should be configurable)
+- [ ] Redo quote reaction if requested, and sets a limit.
+- [ ] Fix empty message content when a channel is mentionned
+- [ ] Fix GMT timedate to localtime
+- [ ] Investigate about random bot crashes. Might be webdriver timeouts or other.
+- [ ] Investigate on random custom_quote delays

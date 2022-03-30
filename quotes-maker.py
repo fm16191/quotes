@@ -310,7 +310,7 @@ default_prefixes = ['.']
 
 async def determine_prefix(bot, message):
     guild = message.guild
-    #Only allow custom prefixs in guild
+    # Allow only custom prefixes in guilds
     if guild:
         return custom_prefixes.get(guild.id, default_prefixes)
     else:
@@ -530,7 +530,7 @@ async def load_guild(guild_id):
 
     guild_data = {
         'guild_id': guild_id,
-        'emoji': False,
+        'emoji': "🏅",
         'channel': False,
         'messages_customs': [],
         'disable_base_messages': False
